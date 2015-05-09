@@ -1,0 +1,10 @@
+[package]
+name = "johnmark"
+version = "0.1.0"
+description = "A native markdown parser with zero dependencies."
+authors = ["Carl Colglazier <carltcolglazier@gmail.com>"]
+
+[lib]
+name = "johnmark"
+path = "src/lib.rs"
+doc = true
