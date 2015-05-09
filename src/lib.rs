@@ -116,6 +116,64 @@ impl Paragraph {
         }
         return paragarphs;
     }
+    fn parse_paragraph(&self, input: &str, parsed_str: &Vec<Symbol>) -> String {
+        let mut output = String::new();
+        if self.label == ParagraphType::Paragraph {
+            output.push_str("<p>");
+            for i in self.start..self.end {
+                match input.chars().nth(i) {
+                    None => continue,
+                    Some(o) => {
+                        if o != '\n' {
+                            output.push(o)
+                        }
+                    },
+                }
+            }
+            output.push_str("</p>");
+        } else if self.label == ParagraphType::Header {
+            let mut header_weight: u8 = 0;
+            for i in self.start..self.start + 5 {
+                if parsed_str[i] == Symbol::NumberSign {
+                    header_weight += 1;
+                } else {
+                    break;
+                }
+            }
+            let header_str = match header_weight{
+                1 => "1",
+                2 => "2",
+                3 => "3",
+                4 => "4",
+                5 => "5",
+                _ => "6",
+            };
+            output.push_str("<h");
+            output.push_str(header_str);
+            output.push_str(">");
+            for i in self.start + header_weight as usize..self.end {
+                match input.chars().nth(i) {
+                    None => continue,
+                    Some(o) => {
+                        if o != '\n' {
+                            output.push(o)
+                        }
+                    },
+                }
+            };
+            output.push_str("</h");
+            output.push_str(header_str);
+            output.push_str(">");
+        } else if self.label == ParagraphType::Blockquote {
+            output.push_str("<blockquote>");
+            let shorter_paragraph = Paragraph::parse(&parsed_str, self.start + 1);
+            output.push_str(&shorter_paragraph.parse_paragraph(input, &parsed_str));
+            output.push_str("</blockquote>");
+        } else {
+            output = String::new();
+        }
+        return output;
+    }
 }
 
 #[test]
@@ -130,72 +188,13 @@ fn test_paragraph() {
     assert!(ParagraphType::Header == parsed_paragraphs[1].label);
 }
 
-fn parse_paragraph(input: &str, parsed_str: &Vec<Symbol>, paragraph: Paragraph) -> String {
-    let mut output = String::new();
-    if paragraph.label == ParagraphType::Paragraph {
-        output.push_str("<p>");
-        for i in paragraph.start..paragraph.end {
-            match input.chars().nth(i) {
-                None => continue,
-                Some(o) => {
-                    if o != '\n' {
-                        output.push(o)
-                    }
-                },
-            }
-        }
-        output.push_str("</p>");
-    } else if paragraph.label == ParagraphType::Header {
-        let mut header_weight: u8 = 0;
-        for i in paragraph.start..paragraph.start + 5 {
-            if parsed_str[i] == Symbol::NumberSign {
-                header_weight += 1;
-            } else {
-                break;
-            }
-        }
-        let header_str = match header_weight{
-            1 => "1",
-            2 => "2",
-            3 => "3",
-            4 => "4",
-            5 => "5",
-            _ => "6",
-        };
-        output.push_str("<h");
-        output.push_str(header_str);
-        output.push_str(">");
-        for i in paragraph.start + header_weight as usize..paragraph.end {
-            match input.chars().nth(i) {
-                None => continue,
-                Some(o) => {
-                    if o != '\n' {
-                        output.push(o)
-                    }
-                },
-            }
-        };
-        output.push_str("</h");
-        output.push_str(header_str);
-        output.push_str(">");
-    } else if paragraph.label == ParagraphType::Blockquote {
-        output.push_str("<blockquote>");
-        let shorter_paragraph = Paragraph::parse(&parsed_str, paragraph.start + 1);
-        output.push_str(&parse_paragraph(input, &parsed_str, shorter_paragraph));
-        output.push_str("</blockquote>");
-    } else {
-        output = String::new();
-    }
-    return output;
-}
-
 /// Convert a string of markdown to HTML.
 pub fn convert(input: &str) -> String {
     let parsed_str = Symbol::parse_str(input);
     let parsed_paragraphs = Paragraph::parse_symbols(&parsed_str);
     let mut output = String::new();
     for paragraph in parsed_paragraphs {
-        output.push_str(&parse_paragraph(input, &parsed_str, paragraph));
+        output.push_str(&paragraph.parse_paragraph(input, &parsed_str));
     }
     return output;
 }
