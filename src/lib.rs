@@ -49,6 +49,36 @@ impl Symbol {
     }
 }
 
+struct Section {
+    start: usize,
+    end: usize,
+}
+
+impl Section {
+    fn new(start: usize, end: usize) -> Section {
+        return Section{start: start, end: end};
+    }
+    fn parse(&self, input: &str, parsed_str: &Vec<Symbol>) -> String {
+        let mut output = String::new();
+        for i in self.start..self.end {
+            match parsed_str[i] {
+                Symbol::Newline => continue,
+                Symbol::EndInput => break,
+                _ => output.push(input.chars().nth(i).unwrap_or(' ')),
+            }
+        }
+        return output;
+    }
+}
+
+#[test]
+fn test_section() {
+    let input = "`code` block.";
+    let parsed_str = Symbol::parse_str(input);
+    let section = Section::new(0, parsed_str.len());
+    assert_eq!("`code` block.", section.parse(input, &parsed_str));
+}
+
 #[derive(PartialEq)]
 enum ParagraphType {
     Header,
@@ -120,16 +150,8 @@ impl Paragraph {
         let mut output = String::new();
         if self.label == ParagraphType::Paragraph {
             output.push_str("<p>");
-            for i in self.start..self.end {
-                match input.chars().nth(i) {
-                    None => continue,
-                    Some(o) => {
-                        if o != '\n' {
-                            output.push(o)
-                        }
-                    },
-                }
-            }
+            output.push_str(&Section::new(self.start, self.end).parse(input, parsed_str));
+
             output.push_str("</p>");
         } else if self.label == ParagraphType::Header {
             let mut header_weight: u8 = 0;
@@ -152,13 +174,8 @@ impl Paragraph {
             output.push_str(header_str);
             output.push_str(">");
             for i in self.start + header_weight as usize..self.end {
-                match input.chars().nth(i) {
-                    None => continue,
-                    Some(o) => {
-                        if o != '\n' {
-                            output.push(o)
-                        }
-                    },
+                if parsed_str[i] != Symbol::Newline {
+                    output.push(input.chars().nth(i).unwrap_or(' '));
                 }
             };
             output.push_str("</h");
