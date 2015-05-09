@@ -130,68 +130,11 @@ fn test_paragraph() {
     assert!(ParagraphType::Header == parsed_paragraphs[1].label);
 }
 
-// TODO: Headers.
-/*
-#[allow(dead_code)]
-struct Header {
-    weight: u8,
-    offset: usize,
-}
-
-impl Header {
-    #[allow(dead_code)]
-    fn parse(symbols: Vec<Symbol>, start: usize) -> Option<Header> {
-        let mut position: (usize, usize, usize, usize);
-        for i in start..symbols.len() {
-            let ref next_symbol = symbols[i+ 1];
-            match next_symbol {
-                &Symbol::Newline | &Symbol::EndInput => return None,
-                _ => continue,
-            }
-        }
-        return None;
-    }
-}
-x
-#[test]
-fn test_header() {
-    let parsed_str = parse_str("# Header\n");
-    assert!(Header::parse(parsed_str, 0).is_none());
-}
-*/
-
-/*
-struct Link {
-    a: String,
-    href: String,
-}
-*/
-
-/// Convert a string of markdown to HTML.
-pub fn convert(input: &str) -> String {
-    let parsed_str = Symbol::parse_str(input);
-    let parsed_paragraphs = Paragraph::parse_symbols(&parsed_str);
-    //let mut offset: usize = 0;
+fn parse_paragraph(input: &str, parsed_str: &Vec<Symbol>, paragraph: Paragraph) -> String {
     let mut output = String::new();
-    for paragraph in parsed_paragraphs {
-        let opening_tag: &'static str;
-        let closing_tag: &'static str;
-        let offset: u8;
-        if paragraph.label == ParagraphType::Paragraph {
-            opening_tag = "<p>";
-            closing_tag = "</p>";
-            offset = 0;
-        } else if paragraph.label == ParagraphType::Blockquote {
-            opening_tag = "<blockquote>";
-            closing_tag = "</blockquote>";
-            offset = 1;
-        } else {
-            opening_tag = "";
-            closing_tag = "";
-            offset = 0;
-        }
-        output.push_str(opening_tag);
-        for i in paragraph.start + offset as usize..paragraph.end {
+    if paragraph.label == ParagraphType::Paragraph {
+        output.push_str("<p>");
+        for i in paragraph.start..paragraph.end {
             match input.chars().nth(i) {
                 None => continue,
                 Some(o) => {
@@ -201,14 +144,66 @@ pub fn convert(input: &str) -> String {
                 },
             }
         }
-        output.push_str(closing_tag)
+        output.push_str("</p>");
+    } else if paragraph.label == ParagraphType::Header {
+        let mut header_weight: u8 = 0;
+        for i in paragraph.start..paragraph.start + 5 {
+            if parsed_str[i] == Symbol::NumberSign {
+                header_weight += 1;
+            } else {
+                break;
+            }
+        }
+        let header_str = match header_weight{
+            1 => "1",
+            2 => "2",
+            3 => "3",
+            4 => "4",
+            5 => "5",
+            _ => "6",
+        };
+        output.push_str("<h");
+        output.push_str(header_str);
+        output.push_str(">");
+        for i in paragraph.start + header_weight as usize..paragraph.end {
+            match input.chars().nth(i) {
+                None => continue,
+                Some(o) => {
+                    if o != '\n' {
+                        output.push(o)
+                    }
+                },
+            }
+        };
+        output.push_str("</h");
+        output.push_str(header_str);
+        output.push_str(">");
+    } else if paragraph.label == ParagraphType::Blockquote {
+        output.push_str("<blockquote>");
+        let shorter_paragraph = Paragraph::parse(&parsed_str, paragraph.start + 1);
+        output.push_str(&parse_paragraph(input, &parsed_str, shorter_paragraph));
+        output.push_str("</blockquote>");
+    } else {
+        output = String::new();
+    }
+    return output;
+}
+
+/// Convert a string of markdown to HTML.
+pub fn convert(input: &str) -> String {
+    let parsed_str = Symbol::parse_str(input);
+    let parsed_paragraphs = Paragraph::parse_symbols(&parsed_str);
+    let mut output = String::new();
+    for paragraph in parsed_paragraphs {
+        output.push_str(&parse_paragraph(input, &parsed_str, paragraph));
     }
     return output;
 }
 
 #[test]
 fn test_convert() {
-    assert_eq!("<p>Paragraph</p><blockquote>2</blockquote>", convert("Paragraph\n\n>2"));
+    assert_eq!("<p>Paragraph</p><blockquote><p>2</p></blockquote><h2>Header</h2>",
+        convert("Paragraph\n\n>2\n\n##Header"));
 }
 
 #[cfg(test)]
