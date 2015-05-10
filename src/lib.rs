@@ -60,6 +60,23 @@ impl Section {
     fn new(start: usize, end: usize) -> Section {
         return Section{start: start, end: end};
     }
+    fn parse_key(&self, key: &str, input: &str, parsed_str: &Vec<Symbol>, index: usize)
+        -> (String, bool, usize) {
+        let mut output = String::new();
+        for x in index + key.len()..self.end {
+            // Ensure that an iterator is not created that is longer than the length of the input.
+            // Otherwise, the slice will go over the character boundary.
+            if x + key.len() > input.len() {
+                break;
+            }
+            if &input[x..x + key.len()] == key {
+                let sub_section = Section::new(index + key.len(), x);
+                output.push_str(&sub_section.parse(input, parsed_str));
+                return (output, true, x + key.len());
+            }
+        }
+        return (output, false, index);
+    }
     fn parse(&self, input: &str, parsed_str: &Vec<Symbol>) -> String {
         let mut output = String::new();
         let mut next: usize = self.start;
@@ -71,16 +88,61 @@ impl Section {
             }
             match parsed_str[i] {
                 Symbol::Code => {
+                    let search = self.parse_key("`", input, parsed_str, i);
+                    if search.1 == true {
+                        output.push_str("<code>");
+                        output.push_str(&search.0);
+                        output.push_str("</code>");
+                    } else {
+                        output.push_str(&search.0);
+                    }
+                    next = search.2;
+                },
+                Symbol::Asterisk => {
+                    // Count the number of asterisks in this series.
+                    // This is useful for determining if this section should be considered
+                    // bold, italic, bold italic, or simply crazy.
+                    let mut asterisk_legnth: usize = 0;
                     for x in i + 1..self.end {
-                        if parsed_str[x] == Symbol::Code {
-                            output.push_str("<code>");
-                            let sub_section = Section::new(i + 1, x);
-                            output.push_str(&sub_section.parse(input, parsed_str));
-                            output.push_str("</code>");
-                            next = x + 1;
+                        asterisk_legnth += 1;
+                        if parsed_str[x] != Symbol::Asterisk {
                             break;
                         }
                     }
+                    let search_symbol = match asterisk_legnth {
+                        2 => "**", // Bold
+                        1 => "*", // Italic
+                        _ => "***", // Bold italic
+                    };
+                    let opening_tag = match asterisk_legnth {
+                        2 => "<strong>", // Bold
+                        1 => "<em>", // Italic
+                        _ => "<strong><em>", // Bold italic
+                    };
+                    let closing_tag = match asterisk_legnth {
+                        2 => "</strong>", // Bold
+                        1 => "</em>", // Italic
+                        _ => "</em></strong>", // Bold italic
+                    };
+                    let offset = match asterisk_legnth {
+                        3 | 2 | 1 => 0,
+                        _ => asterisk_legnth - 3,
+                    };
+                    let search = self.parse_key(search_symbol, input, parsed_str, i + offset);
+                    if offset > 0 {
+                        // TODO: `i` is not being used.
+                        for i in 0..offset {
+                            output.push_str("*");
+                        }
+                    }
+                    if search.1 == true {
+                        output.push_str(opening_tag);
+                        output.push_str(&search.0);
+                        output.push_str(closing_tag);
+                    } else {
+                        output.push_str(&search.0);
+                    }
+                    next = search.2;
                 }
                 Symbol::Newline => continue,
                 Symbol::EndInput => break,
@@ -93,10 +155,11 @@ impl Section {
 
 #[test]
 fn test_section() {
-    let input = "`fn() main{}` block.";
+    // TODO: The extra asterisks at the end dissapear.
+    let input = "`fn() main{}` block. *****bold***.";
     let parsed_str = Symbol::parse_str(input);
     let section = Section::new(0, parsed_str.len());
-    assert_eq!("<code>fn() main{}</code> block.", section.parse(input, &parsed_str));
+    assert_eq!("<code>fn() main{}</code> block. **<strong><em>bold</em></strong>.", section.parse(input, &parsed_str));
 }
 
 #[derive(PartialEq)]
