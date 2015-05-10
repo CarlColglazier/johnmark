@@ -19,6 +19,7 @@ enum Symbol {
     Newline, // \n
     NumberSign, // #
     Blockquote, // >
+    Code, // `
     Unknown,
     EndInput,
 }
@@ -36,6 +37,7 @@ impl Symbol {
             '\r' | '\n' => Symbol::Newline,
             '#' => Symbol::NumberSign,
             '>' => Symbol::Blockquote,
+            '`' => Symbol::Code,
             _ => Symbol::Unknown,
         };
     }
@@ -60,8 +62,26 @@ impl Section {
     }
     fn parse(&self, input: &str, parsed_str: &Vec<Symbol>) -> String {
         let mut output = String::new();
+        let mut next: usize = self.start;
         for i in self.start..self.end {
+            if i < next {
+                continue;
+            } else {
+                next += 1;
+            }
             match parsed_str[i] {
+                Symbol::Code => {
+                    for x in i + 1..self.end {
+                        if parsed_str[x] == Symbol::Code {
+                            output.push_str("<code>");
+                            let sub_section = Section::new(i + 1, x);
+                            output.push_str(&sub_section.parse(input, parsed_str));
+                            output.push_str("</code>");
+                            next = x + 1;
+                            break;
+                        }
+                    }
+                }
                 Symbol::Newline => continue,
                 Symbol::EndInput => break,
                 _ => output.push(input.chars().nth(i).unwrap_or(' ')),
@@ -73,10 +93,10 @@ impl Section {
 
 #[test]
 fn test_section() {
-    let input = "`code` block.";
+    let input = "`fn() main{}` block.";
     let parsed_str = Symbol::parse_str(input);
     let section = Section::new(0, parsed_str.len());
-    assert_eq!("`code` block.", section.parse(input, &parsed_str));
+    assert_eq!("<code>fn() main{}</code> block.", section.parse(input, &parsed_str));
 }
 
 #[derive(PartialEq)]
@@ -218,9 +238,11 @@ pub fn convert(input: &str) -> String {
 
 #[test]
 fn test_convert() {
-    assert_eq!("<p>Paragraph</p><blockquote><p>2</p></blockquote><h2>Header</h2>",
-        convert("Paragraph\n\n>2\n\n##Header"));
+    assert_eq!("<p>Paragraph <code>code</code></p><blockquote><p>2</p></blockquote><h2>Header</h2>",
+        convert("Paragraph `code`\n\n>2\n\n##Header"));
 }
+
+
 
 #[cfg(test)]
 mod tests {
