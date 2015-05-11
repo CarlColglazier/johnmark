@@ -12,7 +12,7 @@ Design
 Advantages
 ----------
 
-Currently, `johnmark` is still under development and still massing several
+Currently, `johnmark` is still under development and still missing several
 standard markdown features. That said, `johnmark` is planned to have the
 following advantages.
 
