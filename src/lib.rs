@@ -317,6 +317,7 @@ impl Parser {
     }
 }
 
+/*
 #[allow(dead_code)]
 struct Output {
     string: String,
@@ -332,6 +333,7 @@ impl Output {
         return Output::new(string.to_string(), offset);
     }
 }
+*/
 
 /// Convert a string of markdown to HTML.
 ///
