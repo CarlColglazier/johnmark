@@ -32,6 +32,16 @@ impl Input {
             return false;
         }
     }
+    fn is_blank(&self, section: &Section) -> bool {
+        for i in section.start..section.end {
+            if self.symbols[i] != Symbol::Tab
+                || self.symbols[i] != Symbol::Space
+                || self.symbols[i] != Symbol::Newline {
+                    return true;
+                }
+        }
+        return false;
+    }
     /// Check if the inputted string slice is found at the given index.
     fn check_match(&self, key: &str, index: usize) -> bool {
         if index + key.len() > self.string.len() {
@@ -382,6 +392,13 @@ impl Parser {
                 output.push_str(&self.input.parse_fancy_header(paragraph));
                 continue;
             }
+
+            // Be sure to skip blank paragraphs.
+            // They are not helping anyone.
+            if self.input.is_blank(paragraph) {
+                continue;
+            }
+
             // Otherwise, let us figure out what kind of section this is.
             match self.input.symbols[paragraph.start] {
                 Symbol::NumberSign => {
@@ -393,7 +410,7 @@ impl Parser {
                         None => output.push_str(&self.input.parse_paragraph(paragraph)),
                         Some(_) => output.push_str(&self.input.string[paragraph.start..paragraph.end]),
                     }
-                }
+                },
                 Symbol::GreaterThan => {
                     output.push_str(&self.input.parse_blockquote(paragraph));
                 }
