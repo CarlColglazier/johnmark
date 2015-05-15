@@ -203,6 +203,26 @@ impl Input {
         }
         return Output::new(output, next_section);
     }
+    fn parse_code(&self, section: &Section) -> Output {
+        let mut output = String::new();
+        let opening_length = self.sequence_length("`", section.start);
+        let subsection = Section::new(section.start + opening_length, section.end);
+        let next_section: usize;
+        match self.find_next(&self.string[section.start..section.start + opening_length], &subsection) {
+            None => {
+                output.push_str(&self.string[section.start..section.start + opening_length]);
+                output.push_str(&self.section_to_string(&subsection));
+                next_section = subsection.end;
+            },
+            Some(n) => {
+                next_section = n + opening_length;
+                output.push_str("<code>");
+                output.push_str(&self.string[subsection.start..n]);
+                output.push_str("</code>");
+            }
+        }
+        return Output::new(output, next_section);
+    }
     /// Convert a section to a string.
     fn section_to_string(&self, paragraph: &Section) -> String {
         let mut output = String::new();
@@ -220,6 +240,12 @@ impl Input {
                     output.push_str(&parse_output.string);
                     next = parse_output.offset;
                 },
+                Symbol::Code => {
+                    let subsection = Section::new(i, paragraph.end);
+                    let parse_output = self.parse_code(&subsection);
+                    output.push_str(&parse_output.string);
+                    next = parse_output.offset;
+                }
                 _ => output.push(self.string.chars().nth(i).unwrap_or(' ')),
             }
         }
@@ -429,4 +455,9 @@ fn emphasis() {
 
     // Unclosed
     assert_eq!("<p>**bold*</p>", convert("**bold*"));
+}
+
+#[test]
+fn code_block() {
+    assert_eq!("<p>Some <code>*code*</code></p>", convert("Some `*code*`"));
 }
