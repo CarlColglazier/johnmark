@@ -66,6 +66,27 @@ impl Input {
         }
         return false;
     }
+    fn split_lines(&self, paragraph: &Section) -> Vec<Section> {
+        let mut section: Vec<Section> = Vec::new();
+        let mut start: usize = 0;
+        let mut next: usize = 0;
+        for i in paragraph.start..paragraph.end {
+            if i < next {
+                continue;
+            } else {
+                next += 1;
+            }
+            if self.symbols[i] == Symbol::Newline {
+                section.push(Section::new(start, i));
+                next += self.sequence_length("\n", i) - 1;
+                start = i + self.sequence_length("\n", i);
+            }
+        }
+        if start < paragraph.end {
+            section.push(Section::new(start, paragraph.end));
+        }
+        return section;
+    }
     /// Check if this section is a fancy header.
     /// That is, if it is formatted as so `Header\n===`.
     fn is_fancy_header(&self, section: &Section) -> bool {
@@ -241,6 +262,50 @@ impl Input {
         }
         return Output::new(output, next_section);
     }
+
+    /// Convert a block of code, set off by an indent.
+    fn parse_code_block(&self, paragraph: &Section) -> String {
+        let mut output = String::new();
+        output.push_str("<pre><code>");
+        let mut closed: bool = false;
+        let mut section_count: usize = 0;
+        for section in self.split_lines(paragraph) {
+            match self.symbols[section.start] {
+                Symbol::Tab => {
+                    if section_count > 0 {
+                        output.push('\n');
+                    }
+                    output.push_str(&self.string[section.start + 1..section.end]);
+                },
+                Symbol::Space => {
+                    if self.sequence_length(" ", section.start) > 3 {
+                        if section_count > 0 {
+                            output.push('\n');
+                        }
+                        output.push_str(&self.string[section.start + 3..section.end]);
+                    } else {
+                        output.push_str("</code></pre>");
+                        closed = true;
+                        let subsection = Section::new(section.start, paragraph.end);
+                        output.push_str(&self.parse_paragraph(&subsection));
+                        break;
+                    }
+                },
+                _ => {
+                    output.push_str("</code></pre>");
+                    closed = true;
+                    let subsection = Section::new(section.start, paragraph.end);
+                    output.push_str(&self.parse_paragraph(&subsection));
+                    break;
+                }
+            }
+            section_count += 1;
+        }
+        if !closed {
+            output.push_str("</code></pre>");
+        }
+        return output;
+    }
     /*
     fn convert_char_entities(&self, section: &Section) -> String {
 
@@ -320,6 +385,14 @@ fn find_next() {
     let new_input = Input::new(input_str);
     let new_section = Section::new(3, new_input.string.len());
     assert_eq!(16, new_input.find_next("**", &new_section).unwrap());
+}
+
+#[test]
+fn split_lines() {
+    let input_str = "\tLine 1\nLine 2";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(3, new_input.string.len());
+    assert_eq!(2, new_input.split_lines(&new_section).len());
 }
 
 #[test]
@@ -435,6 +508,10 @@ impl Parser {
                         None => output.push_str(&self.input.parse_paragraph(paragraph)),
                         Some(_) => output.push_str(&self.input.string[paragraph.start..paragraph.end]),
                     }
+                },
+                // Code blocks.
+                Symbol::Tab => {
+                    output.push_str(&self.input.parse_code_block(&paragraph));
                 },
                 Symbol::GreaterThan => {
                     output.push_str(&self.input.parse_blockquote(paragraph));

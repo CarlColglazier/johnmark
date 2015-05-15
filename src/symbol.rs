@@ -36,6 +36,7 @@ impl Symbol {
             '-' => Symbol::Hyphen,
             '+' => Symbol::Plus,
             '\r' | '\n' => Symbol::Newline,
+            '\t' => Symbol::Tab,
             '#' => Symbol::NumberSign,
             '<' => Symbol::LessThan,
             '>' => Symbol::GreaterThan,

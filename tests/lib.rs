@@ -33,6 +33,14 @@ fn emphasis() {
 
 #[test]
 fn code_block() {
+    assert_eq!("<pre><code>Test</code></pre>", convert("\tTest"));
+    assert_eq!("<pre><code>Foo</code></pre><p>Paragraph</p>", convert("\tFoo\nParagraph"));
+    assert_eq!("<pre><code>Foo</code></pre><p>Paragraph</p>", convert("\tFoo\nParagraph"));
+    assert_eq!("<pre><code>Foo\nBar</code></pre>", convert("\tFoo\n\tBar"));
+}
+
+#[test]
+fn inline_code() {
     assert_eq!("<p>Some <code>*code*</code></p>", convert("Some `*code*`"));
 }
 
