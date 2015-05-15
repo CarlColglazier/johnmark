@@ -17,6 +17,7 @@ pub enum Symbol {
     LessThan, // <
     GreaterThan, // >
     EqualsSign, // =
+    Tab,
     Other,
     Space,
     EndInput,
@@ -42,7 +43,26 @@ impl Symbol {
             '=' => Symbol::EqualsSign,
             '\\' => Symbol::Escape,
             ' ' => Symbol::Space,
+            '&' => Symbol::Ampersand,
             _ => Symbol::Other,
         };
+    }
+    pub fn is_char_entity(&self) -> bool {
+        match self {
+            &Symbol::Ampersand => return true,
+            &Symbol::LeftBracket => return true,
+            &Symbol::RightBracket => return true,
+            &Symbol::LessThan => return true,
+            &Symbol::GreaterThan => return true,
+            _ => return false,
+        }
+    }
+    pub fn is_blank(&self) -> bool {
+        match self {
+            &Symbol::Space => return true,
+            &Symbol::Tab => return true,
+            &Symbol::Newline => return true,
+            _ => return false,
+        }
     }
 }

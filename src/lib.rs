@@ -34,13 +34,11 @@ impl Input {
     }
     fn is_blank(&self, section: &Section) -> bool {
         for i in section.start..section.end {
-            if self.symbols[i] != Symbol::Tab
-                || self.symbols[i] != Symbol::Space
-                || self.symbols[i] != Symbol::Newline {
-                    return true;
-                }
+            if !self.symbols[i].is_blank() {
+                return false;
+            }
         }
-        return false;
+        return true;
     }
     /// Check if the inputted string slice is found at the given index.
     fn check_match(&self, key: &str, index: usize) -> bool {
@@ -57,6 +55,16 @@ impl Input {
             }
         }
         return None;
+    }
+    /// Check if a section's string cannot be directly appended as valid HTML.
+    /// For example, a `&` may need to be converted to `&amp;`.
+    fn has_char_entity(&self, section: &Section) -> bool {
+        for i in section.start..section.end {
+            if self.symbols[i].is_char_entity() {
+                return true;
+            }
+        }
+        return false;
     }
     /// Check if this section is a fancy header.
     /// That is, if it is formatted as so `Header\n===`.
@@ -233,6 +241,11 @@ impl Input {
         }
         return Output::new(output, next_section);
     }
+    /*
+    fn convert_char_entities(&self, section: &Section) -> String {
+
+    }
+    */
     /// Convert a section to a string.
     fn section_to_string(&self, paragraph: &Section) -> String {
         let mut output = String::new();
@@ -278,6 +291,18 @@ fn is_encaped() {
     assert!(new_input.is_encaped(1));
     assert!(new_input.is_encaped(12));
     assert!(!new_input.is_encaped(8));
+}
+
+#[test]
+fn has_char_entity() {
+    let input_str = "This & that.";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(0, new_input.string.len());
+    assert!(new_input.has_char_entity(&new_section));
+    let input_str = "This and that.";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(0, new_input.string.len());
+    assert!(!new_input.has_char_entity(&new_section));
 }
 
 #[test]
