@@ -245,7 +245,7 @@ impl Input {
                     let parse_output = self.parse_code(&subsection);
                     output.push_str(&parse_output.string);
                     next = parse_output.offset;
-                }
+                },
                 _ => output.push(self.string.chars().nth(i).unwrap_or(' ')),
             }
         }
@@ -387,6 +387,13 @@ impl Parser {
                 Symbol::NumberSign => {
                     output.push_str(&self.input.parse_number_sign_header(paragraph));
                 },
+                // Inline HTML
+                Symbol::LessThan => {
+                    match self.input.find_next(">", paragraph) {
+                        None => output.push_str(&self.input.parse_paragraph(paragraph)),
+                        Some(_) => output.push_str(&self.input.string[paragraph.start..paragraph.end]),
+                    }
+                }
                 Symbol::GreaterThan => {
                     output.push_str(&self.input.parse_blockquote(paragraph));
                 }
@@ -460,4 +467,10 @@ fn emphasis() {
 #[test]
 fn code_block() {
     assert_eq!("<p>Some <code>*code*</code></p>", convert("Some `*code*`"));
+}
+
+#[test]
+fn inline_html() {
+    assert_eq!("<section><p>HTML</p></section>", convert("<section><p>HTML</p></section>"));
+    assert_eq!("<p><section HTML</p>", convert("<section HTML"));
 }
