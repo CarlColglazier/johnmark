@@ -151,9 +151,57 @@ impl Input {
         let mut output = String::new();
         let new_section = Section::new(section.start + 1, section.end);
         output.push_str("<blockquote>");
-        output.push_str(&self.section_to_string(&new_section));
+        output.push_str(&self.parse_paragraph(&new_section));
         output.push_str("</blockquote>");
         return output;
+    }
+    /// For bold or italicized text.
+    fn parse_emphasis(&self, section: &Section) -> Output {
+        let mut output = String::new();
+        let opening_length = self.sequence_length("*", section.start);
+        let opening_tag = match opening_length {
+            1 => "<em>",
+            2 => "<strong>",
+            3 | _ => "<strong><em>",
+        };
+        let closing_tag = match opening_length {
+            1 => "</em>",
+            2 => "</strong>",
+            3 | _ => "</em></strong>",
+        };
+        let search_key = match opening_length {
+            1 => "*",
+            2 => "**",
+            _ => "***",
+        };
+        let subsection = Section::new(section.start + opening_length, section.end);
+        let next_section: usize;
+        match self.find_next(search_key, &subsection) {
+            None => {
+                let mut index = 0;
+                while index < opening_length {
+                    output.push_str("*");
+                    index += 1;
+                }
+                output.push_str(&self.section_to_string(&subsection));
+                next_section = subsection.end;
+            },
+            Some(n) => {
+                if opening_length > 3 {
+                    let mut index = 0;
+                    while index < opening_length - search_key.len() {
+                        output.push_str("*");
+                        index += 1;
+                    }
+                }
+                next_section = n + search_key.len();
+                let subsection = Section::new(subsection.start, n);
+                output.push_str(opening_tag);
+                output.push_str(&self.section_to_string(&subsection));
+                output.push_str(closing_tag);
+            }
+        }
+        return Output::new(output, next_section);
     }
     /// Convert a section to a string.
     fn section_to_string(&self, paragraph: &Section) -> String {
@@ -166,6 +214,12 @@ impl Input {
                 next += 1;
             }
             match self.symbols[i] {
+                Symbol::Asterisk => {
+                    let subsection = Section::new(i, paragraph.end);
+                    let parse_output = self.parse_emphasis(&subsection);
+                    output.push_str(&parse_output.string);
+                    next = parse_output.offset;
+                },
                 _ => output.push(self.string.chars().nth(i).unwrap_or(' ')),
             }
         }
@@ -317,7 +371,7 @@ impl Parser {
     }
 }
 
-/*
+
 #[allow(dead_code)]
 struct Output {
     string: String,
@@ -333,7 +387,7 @@ impl Output {
         return Output::new(string.to_string(), offset);
     }
 }
-*/
+
 
 /// Convert a string of markdown to HTML.
 ///
@@ -356,4 +410,23 @@ fn header_paragraph() {
     assert_eq!("<h1>Header</h1><h1>Header</h1>", convert("Header\n===\n\n# Header"));
     assert_eq!("<p>Content</p>", convert("Content"));
     assert_eq!("<h5>Header</h5><p>Content</p>", convert("##### Header\n\nContent"));
+}
+
+#[test]
+fn blockquote_paragraph() {
+    assert_eq!("<blockquote><p>Quote</p></blockquote>", convert(">Quote"))
+}
+
+#[test]
+fn emphasis() {
+    assert_eq!("<p><strong>bold</strong></p>", convert("**bold**"));
+    assert_eq!("<p><em>bold</em></p>", convert("*bold*"));
+    assert_eq!("<p><strong><em>bold</em></strong></p>", convert("***bold***"));
+    assert_eq!("<p>*<strong><em>bold</em></strong>*</p>", convert("****bold****"));
+
+    // Probably will not happen, but you never know!
+    assert_eq!("<p>****<strong><em>bold</em></strong>****</p>", convert("*******bold*******"));
+
+    // Unclosed
+    assert_eq!("<p>**bold*</p>", convert("**bold*"));
 }
