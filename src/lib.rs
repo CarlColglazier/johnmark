@@ -1,8 +1,10 @@
 //!A native markdown parser for Rust with zero dependencies.
 
 mod symbol;
+mod constants;
 
 use symbol::Symbol;
+use constants::*;
 
 #[allow(dead_code)]
 struct Input {
@@ -139,13 +141,13 @@ impl Input {
             Symbol::Hyphen => "h2",
             _ => "h2" // This should not ever happen.
         };
-        output.push_str("<");
+        output.push_str(HTML_START_OPEN);
         output.push_str(header_text);
-        output.push_str(">");
+        output.push_str(HTML_CLOSE);
         output.push_str(&self.section_to_string(&content_section));
-        output.push_str("</");
+        output.push_str(HTML_END_OPEN);
         output.push_str(header_text);
-        output.push_str(">");
+        output.push_str(HTML_CLOSE);
         return output;
     }
     /// Headers such as '# Header'
@@ -168,13 +170,13 @@ impl Input {
         // TODO: Cut off trailing content.
         let section_end: usize = 0;
         let new_section = Section::new(section_start, section.end - section_end);
-        output.push_str("<");
+        output.push_str(HTML_START_OPEN);
         output.push_str(header_text);
-        output.push_str(">");
+        output.push_str(HTML_CLOSE);
         output.push_str(&self.section_to_string(&new_section));
-        output.push_str("</");
+        output.push_str(HTML_END_OPEN);
         output.push_str(header_text);
-        output.push_str(">");
+        output.push_str(HTML_CLOSE);
         return output;
     }
     /// Regular paragraphs
@@ -197,7 +199,7 @@ impl Input {
     /// For bold or italicized text.
     fn parse_emphasis(&self, section: &Section) -> Output {
         let mut output = String::new();
-        let opening_length = self.sequence_length("*", section.start);
+        let opening_length = self.sequence_length(ASTERISK, section.start);
         let opening_tag = match opening_length {
             1 => "<em>",
             2 => "<strong>",
@@ -209,7 +211,7 @@ impl Input {
             3 | _ => "</em></strong>",
         };
         let search_key = match opening_length {
-            1 => "*",
+            1 => ASTERISK,
             2 => "**",
             _ => "***",
         };
@@ -219,7 +221,7 @@ impl Input {
             None => {
                 let mut index = 0;
                 while index < opening_length {
-                    output.push_str("*");
+                    output.push_str(ASTERISK);
                     index += 1;
                 }
                 output.push_str(&self.section_to_string(&subsection));
@@ -229,7 +231,7 @@ impl Input {
                 if opening_length > 3 {
                     let mut index = 0;
                     while index < opening_length - search_key.len() {
-                        output.push_str("*");
+                        output.push_str(ASTERISK);
                         index += 1;
                     }
                 }
@@ -504,7 +506,7 @@ impl Parser {
                 },
                 // Inline HTML
                 Symbol::LessThan => {
-                    match self.input.find_next(">", paragraph) {
+                    match self.input.find_next(HTML_CLOSE, paragraph) {
                         None => output.push_str(&self.input.parse_paragraph(paragraph)),
                         Some(_) => output.push_str(&self.input.string[paragraph.start..paragraph.end]),
                     }
