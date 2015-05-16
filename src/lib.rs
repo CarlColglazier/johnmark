@@ -14,6 +14,7 @@ struct Input {
 
 #[allow(dead_code)]
 impl Input {
+    
     /// Create a new input.
     fn new (input: &str) -> Input {
         let mut symbols: Vec<Symbol> = Vec::new();
@@ -23,6 +24,7 @@ impl Input {
         symbols.push(Symbol::EndInput);
         return Input { symbols: symbols, string: input.to_string() };
     }
+
     /// Check if a special character at index has been escaped by '\\'
     fn is_encaped(&self, index: usize) -> bool {
         if index > self.string.len() || index < 1 {
@@ -34,6 +36,8 @@ impl Input {
             return false;
         }
     }
+
+    /// Check if the section has anything inside.
     fn is_blank(&self, section: &Section) -> bool {
         for i in section.start..section.end {
             if !self.symbols[i].is_blank() {
@@ -42,6 +46,7 @@ impl Input {
         }
         return true;
     }
+
     /// Check if the inputted string slice is found at the given index.
     fn check_match(&self, key: &str, index: usize) -> bool {
         if index + key.len() > self.string.len() {
@@ -49,6 +54,7 @@ impl Input {
         }
         return &self.string[index..index + key.len()] == key;
     }
+
     /// Find the next instance of a given str.
     fn find_next(&self, key: &str, section: &Section) -> Option<usize> {
         for i in section.start..section.end {
@@ -58,6 +64,7 @@ impl Input {
         }
         return None;
     }
+
     /// Check if a section's string cannot be directly appended as valid HTML.
     /// For example, a `&` may need to be converted to `&amp;`.
     fn has_char_entity(&self, section: &Section) -> bool {
@@ -68,6 +75,8 @@ impl Input {
         }
         return false;
     }
+
+    /// Split a paragraph into new sections on the newline character.
     fn split_lines(&self, paragraph: &Section) -> Vec<Section> {
         let mut section: Vec<Section> = Vec::new();
         let mut start: usize = 0;
@@ -89,6 +98,7 @@ impl Input {
         }
         return section;
     }
+
     /// Check if this section is a fancy header.
     /// That is, if it is formatted as so `Header\n===`.
     fn is_fancy_header(&self, section: &Section) -> bool {
@@ -116,6 +126,7 @@ impl Input {
         }
         return false;
     }
+
     /// Check how many times (if any) a character is repeated.
     fn sequence_length(&self, key: &str, index: usize) -> usize {
         let mut length: usize = 0;
@@ -127,6 +138,7 @@ impl Input {
             }
         }
     }
+
     /// Headers such as 'Header\n===='
     fn parse_fancy_header(&self, section: &Section) -> String {
         let mut output = String::new();
@@ -150,6 +162,7 @@ impl Input {
         output.push_str(HTML_CLOSE);
         return output;
     }
+
     /// Headers such as '# Header'
     fn parse_number_sign_header(&self, section: &Section) -> String {
         let mut output = String::new();
@@ -179,6 +192,7 @@ impl Input {
         output.push_str(HTML_CLOSE);
         return output;
     }
+
     /// Regular paragraphs
     fn parse_paragraph(&self, section: &Section) -> String {
         let mut output = String::new();
@@ -187,6 +201,7 @@ impl Input {
         output.push_str("</p>");
         return output;
     }
+
     /// Blockquote paragraphs
     fn parse_blockquote(&self, section: &Section) -> String {
         let mut output = String::new();
@@ -196,6 +211,7 @@ impl Input {
         output.push_str("</blockquote>");
         return output;
     }
+
     /// For bold or italicized text.
     fn parse_emphasis(&self, section: &Section) -> Output {
         let mut output = String::new();
@@ -244,6 +260,8 @@ impl Input {
         }
         return Output::new(output, next_section);
     }
+
+    // Parse inline code.
     fn parse_code(&self, section: &Section) -> Output {
         let mut output = String::new();
         let opening_length = self.sequence_length("`", section.start);
@@ -525,7 +543,6 @@ impl Parser {
     }
 }
 
-
 #[allow(dead_code)]
 struct Output {
     string: String,
@@ -541,7 +558,6 @@ impl Output {
         return Output::new(string.to_string(), offset);
     }
 }
-
 
 /// Convert a string of markdown to HTML.
 ///
