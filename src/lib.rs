@@ -14,7 +14,7 @@ struct Input {
 
 #[allow(dead_code)]
 impl Input {
-    
+
     /// Create a new input.
     fn new (input: &str) -> Input {
         let mut symbols: Vec<Symbol> = Vec::new();
@@ -302,7 +302,7 @@ impl Input {
                         if section_count > 0 {
                             output.push('\n');
                         }
-                        output.push_str(&self.string[section.start + 3..section.end]);
+                        output.push_str(&self.string[section.start + 4..section.end]);
                     } else {
                         output.push_str("</code></pre>");
                         closed = true;
@@ -532,6 +532,20 @@ impl Parser {
                 // Code blocks.
                 Symbol::Tab => {
                     output.push_str(&self.input.parse_code_block(&paragraph));
+                },
+                // Sometimes there are extra spaces that simply do not need
+                // to be there. Other times, there four spaces are used to
+                // indicate a code block.
+                Symbol::Space => {
+                    let spaces_number = self.input.sequence_length(" ", paragraph.start);
+                    if  spaces_number > 3 {
+                        // Code block.
+                        output.push_str(&self.input.parse_code_block(&paragraph));
+                    } else {
+                        // Just some extra spaces.
+                        let subsection = Section::new(paragraph.start + spaces_number, paragraph.end);
+                        output.push_str(&self.input.parse_paragraph(&subsection));
+                    }
                 },
                 Symbol::GreaterThan => {
                     output.push_str(&self.input.parse_blockquote(paragraph));

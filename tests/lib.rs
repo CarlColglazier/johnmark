@@ -37,6 +37,11 @@ fn code_block() {
     assert_eq!("<pre><code>Foo</code></pre><p>Paragraph</p>", convert("\tFoo\nParagraph"));
     assert_eq!("<pre><code>Foo</code></pre><p>Paragraph</p>", convert("\tFoo\nParagraph"));
     assert_eq!("<pre><code>Foo\nBar</code></pre>", convert("\tFoo\n\tBar"));
+
+    // Using spaces.
+    assert_eq!("<pre><code>Foo</code></pre>", convert("    Foo"));
+    assert_eq!("<pre><code>Foo\nBar</code></pre>", convert("    Foo\n    Bar"));
+    assert_eq!("<pre><code>Foo</code></pre><p>Bar</p>", convert("    Foo\nBar"));
 }
 
 #[test]
