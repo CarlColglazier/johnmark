@@ -10,11 +10,13 @@ fn header_paragraph() {
     assert_eq!("<h1>Header</h1><h1>Header</h1>", convert("Header\n===\n\n# Header"));
     assert_eq!("<p>Content</p>", convert("Content"));
     assert_eq!("<h5>Header</h5><p>Content</p>", convert("##### Header\n\nContent"));
+    assert_eq!("<p>Content</p><h1>Header</h1>", convert("Content\n# Header"));
 }
 
 #[test]
 fn blockquote_paragraph() {
-    assert_eq!("<blockquote><p>Quote</p></blockquote>", convert(">Quote"))
+    assert_eq!("<blockquote><p>Quote</p></blockquote>", convert(">Quote"));
+    assert_eq!("<p>foo</p><blockquote><p>bar</p></blockquote>", convert("foo\n>bar"))
 }
 
 #[test]
