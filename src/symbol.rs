@@ -17,6 +17,7 @@ pub enum Symbol {
     LessThan, // <
     GreaterThan, // >
     EqualsSign, // =
+    Alphanumeric, // 0-9,A-z
     Tab,
     Other,
     Space,
@@ -45,7 +46,10 @@ impl Symbol {
             '\\' => Symbol::Escape,
             ' ' => Symbol::Space,
             '&' => Symbol::Ampersand,
-            _ => Symbol::Other,
+            _ => match input.is_alphanumeric() {
+                true => Symbol::Alphanumeric,
+                false => Symbol::Other,
+            },
         };
     }
     pub fn is_char_entity(&self) -> bool {
