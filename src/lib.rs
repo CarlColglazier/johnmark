@@ -65,6 +65,20 @@ impl Input {
         return None;
     }
 
+    /// Find the right-flanking delimiter.
+    /// Requires that a alphanumeric precede the key.
+    fn find_right_flanking(&self, key: &str, section: &Section) -> Option<usize> {
+        for i in section.start..section.end {
+            if self.symbols[i - 1] != Symbol::Alphanumeric {
+                continue;
+            }
+            if self.check_match(key, i) {
+                return Some(i);
+            }
+        }
+        return None;
+    }
+
     /// Check if a section's string cannot be directly appended as valid HTML.
     /// For example, a `&` may need to be converted to `&amp;`.
     fn has_char_entity(&self, section: &Section) -> bool {
@@ -233,7 +247,7 @@ impl Input {
         };
         let subsection = Section::new(section.start + opening_length, section.end);
         let next_section: usize;
-        match self.find_next(search_key, &subsection) {
+        match self.find_right_flanking(search_key, &subsection) {
             None => {
                 let mut index = 0;
                 while index < opening_length {
