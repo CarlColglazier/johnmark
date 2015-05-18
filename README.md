@@ -16,6 +16,8 @@ Currently, `johnmark` is still under development and still missing several
 standard markdown features. That said, `johnmark` is planned to have the
 following advantages.
 
+### CommonMark compatible. ###
+
 ### 100% native Rust. ###
 
 Considering that even Rust's documentation is written in Rust, having a markdown
