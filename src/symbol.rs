@@ -17,6 +17,8 @@ pub enum Symbol {
     LessThan, // <
     GreaterThan, // >
     EqualsSign, // =
+    Quote, // "
+    Apostrophe, // '
     Alphanumeric, // 0-9,A-z
     Tab,
     Other,
@@ -46,6 +48,8 @@ impl Symbol {
             '\\' => Symbol::Escape,
             ' ' => Symbol::Space,
             '&' => Symbol::Ampersand,
+            '"' => Symbol::Quote,
+            '\'' => Symbol::Apostrophe,
             _ => match input.is_alphanumeric() {
                 true => Symbol::Alphanumeric,
                 false => Symbol::Other,

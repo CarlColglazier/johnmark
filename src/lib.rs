@@ -4,6 +4,7 @@ mod symbol;
 mod constants;
 mod input;
 mod section;
+mod link;
 mod output;
 mod parser;
 
