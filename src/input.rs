@@ -390,3 +390,88 @@ impl Input {
         return output;
     }
 }
+
+#[test]
+fn new_input() {
+    let input_str = "# Header.";
+    let new_input = Input::new(input_str);
+    assert_eq!(10, new_input.symbols.len());
+    assert_eq!(9, new_input.string.len());
+}
+
+#[test]
+fn is_encaped() {
+    let input_str = "\\# Header. \\*";
+    let new_input = Input::new(input_str);
+    assert!(new_input.is_encaped(1));
+    assert!(new_input.is_encaped(12));
+    assert!(!new_input.is_encaped(8));
+}
+
+#[test]
+fn has_char_entity() {
+    let input_str = "This & that.";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(0, new_input.string.len());
+    assert!(new_input.has_char_entity(&new_section));
+    let input_str = "This and that.";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(0, new_input.string.len());
+    assert!(!new_input.has_char_entity(&new_section));
+}
+
+#[test]
+fn check_match() {
+    let input_str = "Looking for: **";
+    let new_input = Input::new(input_str);
+    assert!(new_input.check_match("**", 13));
+    assert!(!new_input.check_match("~~", 13));
+    assert!(!new_input.check_match("**", 12));
+}
+
+#[test]
+fn find_next() {
+    let input_str = "** Looking for: **";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(3, new_input.string.len());
+    assert_eq!(16, new_input.find_next("**", &new_section).unwrap());
+}
+
+#[test]
+fn split_lines() {
+    let input_str = "\tLine 1\nLine 2";
+    let new_input = Input::new(input_str);
+    let new_section = Section::new(3, new_input.string.len());
+    assert_eq!(2, new_input.split_lines(&new_section).len());
+}
+
+#[test]
+fn sequence_length() {
+    let input_str = "Looking for: ******";
+    let new_input = Input::new(input_str);
+    assert_eq!(3, new_input.sequence_length("**", 13));
+}
+
+#[test]
+fn is_fancy_header() {
+    // Correct formatting.
+    let input_str = "Header\n======";
+    let new_input = Input::new(input_str);
+    let paragraph = Section::new(0, input_str.len());
+    assert!(new_input.is_fancy_header(&paragraph));
+    // No newline. Should return false.
+    let input_str = "Header ======";
+    let new_input = Input::new(input_str);
+    let paragraph = Section::new(0, input_str.len());
+    assert!(!new_input.is_fancy_header(&paragraph));
+    // Incorrect characters.
+    let input_str = "Header\ngggggg";
+    let new_input = Input::new(input_str);
+    let paragraph = Section::new(0, input_str.len());
+    assert!(!new_input.is_fancy_header(&paragraph));
+    // Not a complete sequence.
+    let input_str = "Header\n=====not==";
+    let new_input = Input::new(input_str);
+    let paragraph = Section::new(0, input_str.len());
+    assert!(!new_input.is_fancy_header(&paragraph));
+}
