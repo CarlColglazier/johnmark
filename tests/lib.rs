@@ -3,6 +3,12 @@ extern crate johnmark;
 use johnmark::convert;
 
 #[test]
+fn extra_characters() {
+    assert_eq!("<p>foo</p>", convert("   foo"));
+    assert_eq!("<p>foo\nbar</p>", convert("foo\n   bar"));
+}
+
+#[test]
 fn header_paragraph() {
     assert_eq!("<h2>Header</h2>", convert("## Header"));
     assert_eq!("<h1>Header</h1>", convert("Header\n==="));
