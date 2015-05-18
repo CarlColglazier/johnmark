@@ -1,6 +1,5 @@
 use constants::*;
 use output::Output;
-use section;
 use symbol::Symbol;
 use section::Section;
 
