@@ -7,11 +7,6 @@ mod section;
 mod output;
 mod parser;
 
-use symbol::Symbol;
-use constants::*;
-use input::Input;
-use section::Section;
-use output::Output;
 use parser::Parser;
 
 /// Convert a string of markdown to HTML.
