@@ -90,23 +90,18 @@ impl Input {
     /// Split a paragraph into new sections on the newline character.
     pub fn split_lines(&self, paragraph: &Section) -> Vec<Section> {
         let mut section: Vec<Section> = Vec::new();
-        let mut start: usize = 0;
-        let mut next: usize = 0;
+        let mut start: usize = paragraph.start;
         for i in paragraph.start..paragraph.end {
-            if i < next {
+            if i < paragraph.start {
                 continue;
-            } else {
-                next += 1;
             }
             if self.symbols[i] == Symbol::Newline {
                 section.push(Section::new(start, i));
-                next += self.sequence_length("\n", i) - 1;
-                start = i + self.sequence_length("\n", i);
+                let seq_len = self.sequence_length("\n", i);
+                start = i + seq_len;
             }
         }
-        if start < paragraph.end {
-            section.push(Section::new(start, paragraph.end));
-        }
+        section.push(Section::new(start, paragraph.end));
         return section;
     }
 
