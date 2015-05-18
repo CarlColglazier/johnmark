@@ -1,4 +1,4 @@
-pub const ASTERISK: &'static str = "*";
-pub const HTML_START_OPEN: &'static str = "<";
-pub const HTML_END_OPEN: &'static str = "</";
-pub const HTML_CLOSE: &'static str = ">";
+pub static ASTERISK: &'static str = "*";
+pub static HTML_START_OPEN: &'static str = "<";
+pub static HTML_END_OPEN: &'static str = "</";
+pub static HTML_CLOSE: &'static str = ">";
