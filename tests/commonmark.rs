@@ -27,9 +27,11 @@ fn container_blocks() {}
 fn lists() {}
 
 #[test]
-#[ignore]
 // TODO: Write tests.
-fn inlines() {}
+fn inlines() {
+    // http://spec.commonmark.org/0.19/#example-227
+    assert_eq!("<p><code>hi</code>lo`</p>", convert("`hi`lo`"));
+}
 
 #[test]
 #[ignore]
