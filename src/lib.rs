@@ -368,6 +368,18 @@ impl Input {
                     output.push_str(&parse_output.string);
                     next = parse_output.offset;
                 },
+                Symbol::Newline => {
+                    if i < self.symbols.len() {
+                        if self.symbols[i + 1] == Symbol::Space {
+                            // Strip extra spaces.
+                            next += self.sequence_length(" ", i + 1);
+                            if next == paragraph.end {
+                                continue;
+                            }
+                        }
+                    }
+                    output.push('\n');
+                }
                 _ => output.push(self.string.chars().nth(i).unwrap_or(' ')),
             }
         }
