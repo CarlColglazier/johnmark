@@ -1,14 +1,12 @@
 //!A native markdown parser for Rust with zero dependencies.
 
 mod symbol;
-mod constants;
-mod input;
+mod content;
 mod section;
-mod link;
-mod output;
-mod parser;
+mod paragraph;
+mod line;
 
-use parser::Parser;
+use content::Content;
 
 /// Convert a string of markdown to HTML.
 ///
@@ -19,6 +17,6 @@ use parser::Parser;
 /// assert_eq!("<h1>Header</h1><p>Content</p>", johnmark::convert(input_str));
 /// ```
 pub fn convert(input: &str) -> String {
-    let parser = Parser::new(input);
+    let parser = Content::from_str(input);
     return parser.convert();
 }

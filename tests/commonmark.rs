@@ -13,7 +13,7 @@ fn tab_expansion() {
 #[test]
 // TODO: Fix compatibility.
 fn blank_lines() {
-    assert_eq!("<p>aaa</p><h1>aaa</h1>", convert("  \n\naaa\n  \n\n# aaa\n\n  "));
+    assert_eq!("<p>aaa\n</p><h1>aaa</h1>", convert("  \n\naaa\n  \n\n# aaa\n\n  "));
 }
 
 #[test]
@@ -90,9 +90,7 @@ fn textual_content() {
     // http://spec.commonmark.org/0.19/#example-546
     assert_eq!("<p>hello $.;'there</p>", convert("hello $.;'there"));
 
-    // http://spec.commonmark.org/0.19/#example-547
-    // TODO
-    //assert_eq!("<p>Foo χρῆν</p>", convert("Foo χρῆν"));
+    // TODO: http://spec.commonmark.org/0.19/#example-547
 
     // http://spec.commonmark.org/0.19/#example-548
     assert_eq!("<p>Multiple     spaces</p>", convert("Multiple     spaces"));

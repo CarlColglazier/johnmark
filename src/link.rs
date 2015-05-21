@@ -1,5 +1,7 @@
+//! Hyperlinks.
+
 use constants::{HTML_START_OPEN, HTML_END_OPEN, HTML_CLOSE};
-use input::Input;
+use content::Content;
 use section::Section;
 use symbol::Symbol;
 
@@ -19,10 +21,10 @@ impl LinkMetadata {
         let href = href.to_string();
         return LinkMetadata { href: href, title: title };
     }
-    fn from_inline(input: &Input, section: &Section) -> Option<LinkMetadata> {
+    fn from_inline(content: &Content, section: &Section) -> Option<LinkMetadata> {
         let mut link_start: usize = section.end;
         for i in section.start..section.end {
-            match input.symbols[i] {
+            match content.symbols[i] {
                 Symbol::Newline | Symbol::Space => {
                     if i == section.end {
                         return None;
@@ -38,7 +40,7 @@ impl LinkMetadata {
         }
         let mut link_end: usize = section.end;
         for i in link_start..section.end {
-            match input.symbols[i] {
+            match content.symbols[i] {
                 Symbol::Newline | Symbol::Space => {
                     link_end = i;
                     break;
@@ -49,32 +51,32 @@ impl LinkMetadata {
         if link_start == link_end {
             return None;
         }
-        let href = &input.string[link_start..link_end];
+        let href = &content.string[link_start..link_end];
         let mut title: &str = "";
         if link_end < section.end {
             for i in link_end..section.end {
-                match input.symbols[i] {
+                match content.symbols[i] {
                     Symbol::Quote => {
                         let subsection = Section::new(i + 1, section.end);
-                        title = match input.find_next("\"", &subsection) {
+                        title = match content.find_next("\"", &subsection) {
                             None => "",
-                            Some(n) => &input.string[i + 1..n],
+                            Some(n) => &content.string[i + 1..n],
                         };
                         break;
                     },
                     Symbol::Apostrophe => {
                         let subsection = Section::new(i + 1, section.end);
-                        title = match input.find_next("'", &subsection) {
+                        title = match content.find_next("'", &subsection) {
                             None => "",
-                            Some(n) => &input.string[i + 1..n],
+                            Some(n) => &content.string[i + 1..n],
                         };
                         break;
                     },
                     Symbol::LeftParenthsis => {
                         let subsection = Section::new(i + 1, section.end);
-                        title = match input.find_next(")", &subsection) {
+                        title = match content.find_next(")", &subsection) {
                             None => "",
-                            Some(n) => &input.string[i + 1..n],
+                            Some(n) => &content.string[i + 1..n],
                         };
                         break;
                     },
@@ -99,6 +101,23 @@ impl Link {
         let metadata = LinkMetadata::new(href, title);
         return Link { id: id, metadata: metadata };
     }
+    /*
+    fn from_inline(content: &content, section: &Section) -> Option<Link> {
+        let mut id_start = section.start;
+        for i in section.start..section.end {
+            if content.symbols[i] == Symbol::LeftBracket {
+                break;
+            }
+            id_start += 1;
+        }
+        let id_end = match content.find_next("](", section) {
+            None => return None,
+            Some(i) => i,
+        };
+        let id = &content.string[id_start..id_end];
+
+    }
+    */
     fn to_string(&self) -> String {
         let mut output = String::new();
         output.push_str(HTML_START_OPEN);
@@ -126,7 +145,7 @@ impl Link {
 mod test {
     use super::Link;
     use super::LinkMetadata;
-    use input::Input;
+    use content::content;
     use section::Section;
 
     #[test]
@@ -148,34 +167,34 @@ mod test {
     fn parse_link_metadata() {
 
         // Just the link.
-        let input_str = "http://carlcolglazier.com";
-        let input = Input::new(input_str);
-        let section = Section::new(0, input_str.len());
-        let link_metadata = match LinkMetadata::from_inline(&input, &section) {
+        let content_str = "http://carlcolglazier.com";
+        let content = Content::from_str(content_str);
+        let section = Section::new(0, content_str.len());
+        let link_metadata = match LinkMetadata::from_inline(&content, &section) {
             None => panic!("Parsing error."),
             Some(m) => m,
         };
-        assert_eq!(input_str, link_metadata.href);
+        assert_eq!(content_str, link_metadata.href);
 
         // Extra spaces.
-        let extra_input_str = "      http://carlcolglazier.com         ";
-        let input = Input::new(extra_input_str);
-        let section = Section::new(0, extra_input_str.len());
-        let link_metadata = match LinkMetadata::from_inline(&input, &section) {
+        let extra_content_str = "      http://carlcolglazier.com         ";
+        let content = Content::from_str(extra_content_str);
+        let section = Section::new(0, extra_content_str.len());
+        let link_metadata = match LinkMetadata::from_inline(&content, &section) {
             None => panic!("Parsing error."),
             Some(m) => m,
         };
-        assert_eq!(input_str, link_metadata.href);
+        assert_eq!(content_str, link_metadata.href);
 
         // Include a title.
-        let title_input_str = "http://carlcolglazier.com 'Title'";
-        let input = Input::new(title_input_str);
-        let section = Section::new(0, title_input_str.len());
-        let link_metadata = match LinkMetadata::from_inline(&input, &section) {
+        let title_content_str = "http://carlcolglazier.com 'Title'";
+        let content = Content::from_str(title_content_str);
+        let section = Section::new(0, title_content_str.len());
+        let link_metadata = match LinkMetadata::from_inline(&content, &section) {
             None => panic!("Parsing error."),
             Some(m) => m,
         };
-        assert_eq!(input_str, link_metadata.href);
+        assert_eq!(content_str, link_metadata.href);
         assert_eq!(Some("Title".to_string()), link_metadata.title);
     }
 }

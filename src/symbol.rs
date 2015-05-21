@@ -56,6 +56,14 @@ impl Symbol {
             },
         };
     }
+    pub fn from_str(string: &str) -> Vec<Symbol> {
+        let mut symbols: Vec<Symbol> = Vec::new();
+        for character in string.chars() {
+            symbols.push(Symbol::from_char(character));
+        }
+        symbols.push(Symbol::EndInput);
+        return symbols;
+    }
     pub fn is_char_entity(&self) -> bool {
         match self {
             &Symbol::Ampersand => return true,
