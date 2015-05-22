@@ -8,6 +8,7 @@ pub enum LineType {
     Blank,
     Paragraph,
     Header,
+    HorizontalRule,
     Blockquote,
     Code,
     Null,
@@ -102,6 +103,10 @@ impl Content {
                     output.push_str(&self.convert_header(&paragraph.lines[0]));
                 },
 
+                LineType::HorizontalRule => {
+                    output.push_str("<hr />")
+                }
+
                 // This should not happen.
                 _ => continue,
             }
@@ -113,6 +118,9 @@ impl Content {
 
     fn parse_section(&self, indexes: &[usize]) -> String {
         let mut output = String::new();
+        if indexes.len() < 1 {
+            return output;
+        }
         let mut next = indexes[0];
         for index in indexes {
             let i = *index;
@@ -300,6 +308,32 @@ impl Content {
         return true;
     }
 
+    fn is_horizonal_rule(&self, start: usize, end: usize) -> bool {
+        let search_symbol = match self.symbols[start] {
+            Symbol::Asterisk => Symbol::Asterisk,
+            Symbol::Hyphen => Symbol::Hyphen,
+            Symbol::Underscore => Symbol::Underscore,
+            _ => return false,
+        };
+        let mut symbol_count = 0;
+        let mut index = start;
+        while index < end {
+            if !self.symbols[index].is_blank() {
+                if self.symbols[index] != search_symbol {
+                    return false;
+                } else {
+                    symbol_count += 1;
+                }
+            }
+            index += 1;
+        }
+        if symbol_count >= 3 {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     fn find_line_type(&self, start: usize, end: usize) -> LineType {
         if self.is_blank(start, end) {
             return LineType::Blank;
@@ -312,10 +346,16 @@ impl Content {
         if offset > 3 {
             return LineType::Code;
         }
+        if self.is_horizonal_rule(start + offset, end) {
+            return LineType::HorizontalRule;
+        }
         match self.symbols[start + offset] {
             Symbol::NumberSign => {
-                if self.symbols[start + offset + self.sequence_length(Symbol::NumberSign, start + offset)]
-                    == Symbol::Space {
+                // Number signs used in headers must be followed by a space
+                // and must not be longer than six characters long.
+                let number_of_hashes = self.sequence_length(Symbol::NumberSign, start + offset);
+                if self.symbols[start + offset + number_of_hashes] == Symbol::Space
+                    && number_of_hashes <= 6 {
                         return LineType::Header;
                     } else {
                         return LineType::Paragraph;
@@ -346,6 +386,23 @@ impl Content {
                              paragraphs.push(Paragraph::new(lines, last_line_type));
                              lines = Vec::new();
                          } else {
+                             let is_header = last_line_type == LineType::Paragraph
+                                 && lines.len() == 1;
+                             if line_type == LineType::HorizontalRule {
+                                 // TODO: Check if the line follows the form '---'
+                                 if is_header {
+                                     lines.push(stripped_line);
+                                     paragraphs.push(Paragraph::new(lines, LineType::Paragraph));
+                                     lines = Vec::new();
+                                 } else {
+                                     paragraphs.push(Paragraph::new(lines, LineType::Paragraph));
+                                     lines = Vec::new();
+                                     lines.push(stripped_line);
+                                     paragraphs.push(Paragraph::new(lines, LineType::HorizontalRule));
+                                     lines = Vec::new();
+                                 }
+                                 break;
+                             }
                              if lines.len() > 0 {
                                  paragraphs.push(Paragraph::new(lines, last_line_type));
                                  lines = Vec::new();
@@ -372,6 +429,26 @@ impl Content {
                  lines.push(Section::new(index, next_newline));
                  index = next_newline + 1;
              } else {
+                 let is_header = last_line_type == LineType::Paragraph
+                     && lines.len() == 1;
+                 if line_type == LineType::HorizontalRule {
+                     // TODO: Check if the line follows the form '---'
+                     if is_header {
+                         lines.push(stripped_line);
+                         index = next_newline + 1;
+                         continue;
+                     } else {
+                         if lines.len() > 0 {
+                             paragraphs.push(Paragraph::new(lines, last_line_type));
+                         }
+                         lines = Vec::new();
+                         lines.push(stripped_line);
+                         paragraphs.push(Paragraph::new(lines, LineType::HorizontalRule));
+                         lines = Vec::new();
+                         index = next_newline + 1;
+                         continue;
+                     }
+                 }
                  match last_line_type {
 
                      // This is the first line.
